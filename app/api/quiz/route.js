@@ -27,14 +27,17 @@ export async function POST(req) {
         { role: "system", content: system },
         { role: "user", content: user }
       ],
-      temperature: 0.5
+      temperature: 0.5,
+      response_format: { type: "json_object" }
     });
-
-    const responseText = completion.choices?.[0]?.message?.content?.trim() || "[]";
+    const responseText = completion.choices?.[0]?.message?.content?.trim() || "{}";
     let quiz;
     try {
-      quiz = JSON.parse(responseText);
-    } catch {
+      const parsed = JSON.parse(responseText);
+      // Handle both {quiz: [...]} and direct array formats
+      quiz = Array.isArray(parsed) ? parsed : (parsed.quiz || []);
+    } catch (e) {
+      console.error("Failed to parse quiz JSON:", e, "Response:", responseText);
       quiz = [];
     }
 
