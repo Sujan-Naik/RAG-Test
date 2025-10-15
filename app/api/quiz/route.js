@@ -35,7 +35,14 @@ export async function POST(req) {
     try {
       const parsed = JSON.parse(responseText);
       // Handle both {quiz: [...]} and direct array formats
-      quiz = Array.isArray(parsed) ? parsed : (parsed.quiz || []);
+      const rawQuiz = Array.isArray(parsed) ? parsed : (parsed.quiz || []);
+
+      // Validate and normalize each question
+      quiz = rawQuiz.filter(q => q && q.question).map(q => ({
+        question: q.question,
+        options: Array.isArray(q.options) ? q.options : [],
+        correct: q.correct || q.correctAnswer || q.answer || "N/A"
+      }));
     } catch (e) {
       console.error("Failed to parse quiz JSON:", e, "Response:", responseText);
       quiz = [];
