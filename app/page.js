@@ -8,6 +8,7 @@ export default function Home() {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState(null);
   const [sources, setSources] = useState([]);
+  const [quiz, setQuiz] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -47,6 +48,33 @@ export default function Home() {
       const data = await res.json();
       setAnswer(data.answer);
       setSources(data.sources || []);
+    } catch (err) {
+      setError(err.message || "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function generateQuiz() {
+    if (notes.length === 0) {
+      setError("No notes available to generate a quiz.");
+      return;
+    }
+    setError("");
+    setQuiz([]);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/quiz", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes })
+      });
+      if (!res.ok) {
+        const msg = await res.text();
+        throw new Error(msg || `Request failed (${res.status})`);
+      }
+      const data = await res.json();
+      setQuiz(data.quiz || []);
     } catch (err) {
       setError(err.message || "Something went wrong.");
     } finally {
@@ -145,6 +173,30 @@ export default function Home() {
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+      </section>
+
+      <section style={{ marginTop: 28, background: "#111733", border: "1px solid #2a3565", borderRadius: 10, padding: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <h2 style={{ fontSize: 18, margin: 0 }}>Generate Quiz</h2>
+          <button disabled={loading || notes.length === 0} onClick={generateQuiz} style={{ padding: "10px 14px", borderRadius: 8, background: loading ? "#394a94" : "#4e7dff", color: "#fff", border: "none", fontWeight: 600 }}>
+            {loading ? "Generating..." : "Generate"}
+          </button>
+        </div>
+        {quiz.length > 0 && (
+          <div style={{ display: "grid", gap: 16 }}>
+            {quiz.map((q, idx) => (
+              <div key={idx} style={{ background: "#0f1530", border: "1px solid #2a3565", borderRadius: 10, padding: 12 }}>
+                <p style={{ fontWeight: 600 }}>{q.question}</p>
+                <ul style={{ listStyle: "none", padding: 0 }}>
+                  {q.options.map((opt, oIdx) => (
+                    <li key={oIdx}>{opt}</li>
+                  ))}
+                </ul>
+                <p style={{ marginTop: 8, opacity: 0.8 }}>Correct: {q.correct}</p>
+              </div>
+            ))}
           </div>
         )}
       </section>
